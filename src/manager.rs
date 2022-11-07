@@ -4,6 +4,7 @@ use std::borrow::Borrow;
 use std::hash::Hash;
 
 use crate::entity::{Entity, EntityId};
+use crate::event::EventSystem;
 use crate::type_query::TypesQueryable;
 
 #[derive(Default)]
@@ -22,6 +23,11 @@ impl EntityManager {
             size: Default::default(),
             component_index: Default::default(),
         }
+    }
+
+    pub fn add_event_system(&mut self) {
+        let event_system = EventSystem::default();
+        self.add().add_component(event_system);
     }
 
     pub fn add(&mut self) -> &mut Entity {

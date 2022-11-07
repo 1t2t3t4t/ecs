@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 pub mod entity;
+pub mod event;
 pub mod manager;
 
 pub(crate) mod type_query;
