@@ -102,6 +102,24 @@ impl EntityManager {
         }
     }
 
+    pub fn query_entities_component_one<T: Any>(&self) -> Option<&T> {
+        let entities_id = self.component_index.get(&vec![TypeId::of::<T>()]);
+        if let Some(entities_id) = entities_id.and_then(|ids| ids.iter().next()) {
+            self.entities.get(entities_id).and_then(|e| e.get_component::<T>())
+        } else {
+            None
+        }
+    }
+
+    pub fn query_entities_components_one<'e, T: TypesQueryable<'e>>(&'e self) -> Option<T::QueryResult> {
+        let entities_id = self.component_index.get(&T::get_types());
+        if let Some(entities_id) = entities_id.and_then(|ids| ids.iter().next()) {
+            self.entities.get(entities_id).and_then(|e| e.get_components::<T>())
+        } else {
+            None
+        }
+    }
+
     pub fn query_entities_component_tag_mut<T: Any, Tag: Any>(&mut self) -> Vec<&mut T> {
         let types = <(T, Tag) as TypesQueryable>::get_types();
         let entities_id = self.component_index.get(&types).cloned();
@@ -121,7 +139,7 @@ impl EntityManager {
         }
     }
 
-    pub fn query_entities_component_mut<T: Any>(&mut self) -> Vec<(EntityId, &mut T)> {
+    pub fn query_entities_component_mut<T: Any>(&mut self) -> Vec<&mut T> {
         let entities_id = self.component_index.get(&vec![TypeId::of::<T>()]);
         if let Some(entities_id) = entities_id {
             self.entities
@@ -129,7 +147,6 @@ impl EntityManager {
                 .filter_map(|e| {
                     if entities_id.contains(e.0) {
                         e.1.get_component_mut::<T>()
-                            .and_then(|component| Some((e.0.clone(), component)))
                     } else {
                         None
                     }
@@ -137,6 +154,27 @@ impl EntityManager {
                 .collect()
         } else {
             vec![]
+        }
+    }
+
+    pub fn query_entities_component_tag_one_mut<T: Any, Tag: Any>(&mut self) -> Option<&mut T> {
+        let types = <(T, Tag) as TypesQueryable>::get_types();
+        let entities_id = self.component_index.get(&types);
+        if let Some(entities_id) = entities_id.and_then(|ids| ids.iter().next()) {
+            self.entities.get_mut(entities_id)
+                .and_then(|e|  e.get_component_mut::<T>())
+        } else {
+            None
+        }
+    }
+
+    pub fn query_entities_component_one_mut<T: Any>(&mut self) -> Option<&mut T> {
+        let entities_id = self.component_index.get(&vec![TypeId::of::<T>()]);
+        if let Some(entities_id) = entities_id.and_then(|ids| ids.iter().next()) {
+            self.entities.get_mut(entities_id)
+                .and_then(|e|  e.get_component_mut::<T>())
+        } else {
+            None
         }
     }
 
@@ -240,6 +278,28 @@ mod tests {
     }
 
     #[test]
+    fn test_query_components_one() {
+        let mut manager = EntityManager::default();
+        manager
+            .add()
+            .add_component(CompA(String::from("1")))
+            .add_component(CompB(String::from("1")));
+        manager
+            .add()
+            .add_component(CompA(String::from("2")));
+        manager
+            .add()
+            .add_component(CompA(String::from("3")))
+            .add_component(CompC(String::from("3")));
+        manager.update();
+
+        let res = manager.query_entities_components_one::<(CompA, CompB)>();
+
+        assert!(res.is_some());
+        assert_eq!(res.unwrap(), (&CompA(String::from("1")), &CompB(String::from("1"))));
+    }
+
+    #[test]
     fn test_query_components_mut() {
         let mut manager = EntityManager::default();
         manager
@@ -261,13 +321,33 @@ mod tests {
 
         assert_eq!(res.len(), 2);
         assert!(
-            res.iter().any(|r| *(r.1) == CompA(String::from("1"))),
+            res.iter().any(|r| **(r) == CompA(String::from("1"))),
             "Does not have 1"
         );
         assert!(
-            res.iter().any(|r| *(r.1) == CompA(String::from("2"))),
+            res.iter().any(|r| **(r) == CompA(String::from("2"))),
             "Does not have 2"
         );
+    }
+
+    #[test]
+    fn test_query_components_mut_one() {
+        let mut manager = EntityManager::default();
+        manager
+            .add()
+            .add_component(CompA(String::from("1")));
+        manager
+            .add()
+            .add_component(CompB(String::from("2")));
+        manager
+            .add()
+            .add_component(CompC(String::from("3")));
+        manager.update();
+
+        let res = manager.query_entities_component_one_mut::<CompA>();
+
+        assert!(res.is_some());
+        assert_eq!(*res.unwrap(), CompA(String::from("1")));
     }
 
     #[test]
