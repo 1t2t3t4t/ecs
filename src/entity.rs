@@ -86,6 +86,10 @@ impl Entity {
         self.components.contains_key(&TypeId::of::<T>())
     }
 
+    pub(crate) fn get_raw_components_mut<'e, const N: usize>(&'e mut self, types: [&TypeId; N]) -> Option<[&mut Box<dyn Any>; N]> {
+        self.components.get_many_mut(types)
+    }
+
     pub fn has_components<'e, T: TypesQueryable<'e>>(&'e self) -> bool {
         T::get_types()
             .iter()
