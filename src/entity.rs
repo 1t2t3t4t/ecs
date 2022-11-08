@@ -72,14 +72,18 @@ impl Entity {
             .and_then(|v| v.downcast_ref::<T>())
     }
 
+    pub fn get_components<'e, T: TypesQueryable<'e>>(&'e self) -> Option<T::QueryResult> {
+        T::query(self)
+    }
+
     pub fn get_component_mut<T: Any>(&mut self) -> Option<&mut T> {
         self.components
             .get_mut(&TypeId::of::<T>())
             .and_then(|v| v.downcast_mut::<T>())
     }
 
-    pub fn get_components<'e, T: TypesQueryable<'e>>(&'e self) -> Option<T::QueryResult> {
-        T::query(self)
+    pub fn get_components_mut<'e, T: TypesQueryable<'e>>(&'e mut self) -> Option<T::QueryResultMut> {
+        T::query_mut(self)
     }
 
     pub fn has_component<T: Any>(&self) -> bool {
@@ -106,6 +110,8 @@ mod tests {
     struct MyComponent;
 
     struct OtherComponent;
+
+    struct RandomComponent;
 
     fn get_types<'e, T: TypesQueryable<'e>>() -> Vec<TypeId> {
         T::get_types()
@@ -193,6 +199,25 @@ mod tests {
 
         let res = entity.get_components::<(OtherComponent, MyComponent)>();
         assert!(res.is_some());
+
+        let res = entity.get_components::<(RandomComponent, MyComponent)>();
+        assert!(res.is_none());
+    }
+
+    #[test]
+    fn test_get_components_mut() {
+        let mut entity = Entity::new(1);
+        entity.add_component(MyComponent);
+        entity.add_component(OtherComponent);
+
+        let res = entity.get_components_mut::<(MyComponent, OtherComponent)>();
+        assert!(res.is_some());
+
+        let res = entity.get_components_mut::<(OtherComponent, MyComponent)>();
+        assert!(res.is_some());
+
+        let res = entity.get_components_mut::<(RandomComponent, MyComponent)>();
+        assert!(res.is_none());
     }
 
     #[test]

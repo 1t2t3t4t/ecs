@@ -49,6 +49,8 @@ macro_rules! types_queryable_tuple {
 }
 
 // Auto implement tuple query typeid getter
+types_queryable_tuple!(7, A, B, C, D, E, F, G; a, b, c, d, e, f, g);
+types_queryable_tuple!(6, A, B, C, D, E, F; a, b, c, d, e, f);
 types_queryable_tuple!(5, A, B, C, D, E; a, b, c, d, e);
 types_queryable_tuple!(4, A, B, C, D; a, b, c, d);
 types_queryable_tuple!(3, A, B, C; a, b, c);
